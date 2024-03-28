@@ -3,7 +3,7 @@ from selenium import webdriver
 import time
 
 
-def download_html(url):
+def download_html(url, load_pause_time=5):
     html_content = None
 
     # Set up the webdriver (this example uses Chrome)
@@ -14,7 +14,8 @@ def download_html(url):
         browser.get(url)
 
         # Wait for the content to load
-        time.sleep(5)  # Adjust the sleep time as needed
+        if load_pause_time > 0:
+            time.sleep(load_pause_time)  # Adjust the sleep time as needed
 
         # Now the page is fully loaded, get the page source
         html_content = browser.page_source
