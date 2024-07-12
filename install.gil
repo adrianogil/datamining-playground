@@ -1,0 +1,5 @@
+{
+    "DIR_MACRO": "DATAMINING_TOOLS_DIR",
+    "PROJECT_NAME": "datamining-playground",
+    "BASHRC": "bashrc.sh"
+}
