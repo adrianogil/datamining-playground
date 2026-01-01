@@ -54,17 +54,21 @@ def _find_level_table(tables: Iterable[pd.DataFrame]) -> Optional[pd.DataFrame]:
 def fetch_month(year: int, month_num: int, month_slug: str) -> Optional[pd.DataFrame]:
     """Fetch a single month table from Porto de Manaus."""
     url = f"{BASE_URL}/{month_slug}-{year}/"
+    print(f"Fetching {year}-{month_num:02d} from {url}")
     response = requests.get(url, timeout=25)
     if response.status_code != 200 or not response.text:
+        print(f"No data found for {year}-{month_num:02d} (status={response.status_code}).")
         return None
 
     try:
         tables = pd.read_html(response.text)
     except ValueError:
+        print(f"No tables parsed for {year}-{month_num:02d}.")
         return None
 
     table = _find_level_table(tables)
     if table is None:
+        print(f"No matching level table found for {year}-{month_num:02d}.")
         return None
 
     column_map = {}
@@ -87,13 +91,16 @@ def fetch_month(year: int, month_num: int, month_slug: str) -> Optional[pd.DataF
     data = data.dropna(subset=["day", "level_m"])
     data["date"] = data["day"].apply(lambda day: pd.Timestamp(date(year, month_num, int(day))))
     data = data[["date", "level_m"]].sort_values("date")
+    print(f"Parsed {len(data)} rows for {year}-{month_num:02d}.")
     return data
 
 
 def download_series(year_start: int, year_end: int) -> pd.DataFrame:
     """Download a daily series of water levels."""
     chunks = []
+    print(f"Downloading Rio Negro levels from {year_start} to {year_end}.")
     for year in range(year_start, year_end + 1):
+        print(f"Starting year {year}.")
         for month_num, month_slug in MONTHS:
             month_data = fetch_month(year, month_num, month_slug)
             if month_data is not None and not month_data.empty:
@@ -106,16 +113,19 @@ def download_series(year_start: int, year_end: int) -> pd.DataFrame:
 
     data = pd.concat(chunks, ignore_index=True)
     data = data.drop_duplicates(subset=["date"]).sort_values("date").reset_index(drop=True)
+    print(f"Download complete: {len(data)} total rows.")
     return data
 
 
 def save_csv(data: pd.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data.to_csv(path, index=False)
+    print(f"CSV saved to {path}.")
 
 
 def plot_series(data: pd.DataFrame, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Generating plots in {output_path.parent}.")
 
     plot_data = data.copy()
     plot_data["year"] = plot_data["date"].dt.year
@@ -141,6 +151,7 @@ def plot_series(data: pd.DataFrame, output_path: Path) -> None:
     yearly_path = output_path.with_name(f"{output_path.stem}_min_max{output_path.suffix}")
     plt.savefig(yearly_path, dpi=150)
     plt.close()
+    print(f"Plots saved to {output_path} and {yearly_path}.")
 
 
 def _build_parser() -> argparse.ArgumentParser:
